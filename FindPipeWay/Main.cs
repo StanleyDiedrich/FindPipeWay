@@ -127,6 +127,7 @@ namespace FindPipeWay
                     ConnectorSet connectorSet = mepmodel.ConnectorManager.Connectors;
                     foreach ( Connector connector in connectorSet)
                     {
+                       
                         if (connector.MEPSystem!=null)
                         {
                             var flow = connector.Flow;
