@@ -32,13 +32,15 @@ namespace FindPipeWay
             TaskDialog.Show("E", foundedElement.Id.ToString());
             return foundedElement;
         }
-        public Element FindNextElement (Element element,List<Element> foundedelements)
+        public ElementId FindNextElement (Document doc, ElementId elementId,List<ElementId> foundedelements)
         {
             
-                ElementId ownerId = element.Id;
+                ElementId ownerId = elementId;
+                Element element = doc.GetElement(ownerId);
                 Element foundedElement = null;
                 MEPModel mepModel = null;
                 ConnectorSet connectorSet = null;
+                ElementId foundedelementId = null;
             try
             {
                 if (element is FamilyInstance)
@@ -73,13 +75,14 @@ namespace FindPipeWay
                     {
                         if (nextconnector.Owner.Id != ownerId)
                         {
-                            if (!foundedelements.Contains(nextconnector.Owner))
+                            if (foundedelements.Contains(nextconnector.Owner.Id))
                             {
-                                foundedElement = nextconnector.Owner;
+                                continue;
                             }
                             else
                             {
-                                return null;
+                                foundedElement = nextconnector.Owner;
+                                 foundedelementId = foundedElement.Id;
                             }
                             
                             //TaskDialog.Show("Check", $"{element.Id}, {foundedElement.Id}");
@@ -98,7 +101,7 @@ namespace FindPipeWay
 
                 }
             }
-            return foundedElement;
+            return foundedelementId;
 
             
             
@@ -135,19 +138,19 @@ namespace FindPipeWay
             }
             var startconnector = selectedEquipments.Aggregate((x,y)=>x.Value>y.Value ? x : y).Key;
             var maxvalue = selectedEquipments.Aggregate((x, y) => x.Value > y.Value ? x : y).Value;
-            List<Element> foundedelements = new List<Element>();
-            
-            
+            List<ElementId> foundedelements = new List<ElementId>();
+
+            foundedelements.Add(startconnector.Owner.Id);
             var foundedelement = FindNextElement(startconnector);
-            foundedelements.Add(foundedelement);
+            foundedelements.Add(foundedelement.Id);
            
             
             
             
             int index = foundedelements.Count - 1;
-            Element nextelement = null;
+            ElementId nextelement = null;
             
-            Element f = null;
+            ElementId f = null;
             string name = "";
             try
             {
@@ -156,18 +159,22 @@ namespace FindPipeWay
 
                     nextelement = foundedelements.Last();
                     foundedelements.Distinct();
-                    f = FindNextElement(nextelement, foundedelements);
+                    
+                    f = FindNextElement(doc, nextelement, foundedelements);
                     if (f != null)
                     {
-
-                        if (f != nextelement)
+                        if (!foundedelements.Contains(f))
                         {
-                            foundedelements.Add(f);
+                            if (f != nextelement)
+                            {
+                                foundedelements.Add(f);
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
-                        else
-                        {
-                            continue;
-                        }
+                        
 
 
                     }
@@ -178,7 +185,7 @@ namespace FindPipeWay
                     }
 
                 }
-                while (f.Id != nextelement.Id);
+                while (f != nextelement);
             }
             catch
             {
@@ -188,12 +195,12 @@ namespace FindPipeWay
                 
             
            
-            
+           
             string text = "";
             
             foreach (var foundedelement2 in foundedelements)
             {
-                string a = $"{foundedelement2.Id}  \n";
+                string a = $"{foundedelement2}  \n";
                 text += a;
             }
             TaskDialog.Show("R", text);
