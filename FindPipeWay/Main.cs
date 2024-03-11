@@ -83,6 +83,7 @@ namespace FindPipeWay
                             {
                                 foundedElement = nextconnector.Owner;
                                  foundedelementId = foundedElement.Id;
+                                 if ()
                             }
                             
                             //TaskDialog.Show("Check", $"{element.Id}, {foundedElement.Id}");
@@ -107,6 +108,90 @@ namespace FindPipeWay
             
             
         }
+
+        public bool IsThreeWay (Document doc, ElementId elementId)
+        {
+            
+            Element element = doc.GetElement(elementId);
+            bool isthreeway = false;
+            if (element is FamilyInstance)
+            {
+                if (element is MechanicalFitting)
+                {
+                    FamilyInstance fI = element as FamilyInstance;
+                    MEPModel mepMoidel = fI.MEPModel;
+                    ConnectorSet connectorSet = mepMoidel.ConnectorManager.Connectors;
+                    List<Connector> connectors = new List<Connector>();
+                    foreach (Connector connector in connectorSet)
+                    {
+                        connectors.Add(connector);
+                    }
+                    if (connectors.Count>2)
+                    {
+                        isthreeway = true;
+                    }
+                    elementId = element.Id;
+                }
+                if (element is Pipe)
+                {
+                    Pipe fI = element as Pipe;
+                    
+                    ConnectorSet connectorSet = fI.ConnectorManager.Connectors;
+                    List<Connector> connectors = new List<Connector>();
+                    foreach (Connector connector in connectorSet)
+                    {
+                        connectors.Add(connector);
+                    }
+                    if (connectors.Count > 2)
+                    {
+                        isthreeway = true;
+                    }
+                    elementId = element.Id;
+                }
+            }
+            return isthreeway;
+        }
+
+        public ElementId GetDirection (Document doc, ElementId elementId , bool isthreeway)
+        {
+            ElementId selectedpipe = null;
+            List <ElementId> pipes = new List<ElementId>();
+            if (isthreeway == true)
+            {
+                Element element = doc.GetElement(elementId);
+                if (element!=null)
+                {
+                    FamilyInstance familyInstance = element as FamilyInstance;
+                    MEPModel mepmodel = familyInstance.MEPModel;
+                    ConnectorSet connectorSet = mepmodel.ConnectorManager.Connectors;
+                    foreach (Connector connector in connectorSet)
+                    {
+                        ConnectorSet nextconnectorset = connector.AllRefs;
+                        foreach (Connector nextconnector in nextconnectorset)
+                        {
+                            ElementId nextelementId = nextconnector.Owner.Id;
+                            
+                        }
+                    }
+                }
+            }
+            foreach (ElementId pipe in pipes)
+            {
+                double maxVolume = 0;
+                Element el = doc.GetElement(pipe);
+                Pipe pipe1 = el as Pipe;
+                if (pipe1 != null)
+                {
+                    double volume = pipe1.LookupParameter("Pacход").AsDouble();
+                    if (volume > maxVolume)
+                    {
+                        selectedpipe = pipe1.Id;
+                    }
+                }
+            }
+            return selectedpipe;
+        }
+        
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
