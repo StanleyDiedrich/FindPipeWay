@@ -48,6 +48,7 @@ namespace FindPipeWay
                     FamilyInstance FI = element as FamilyInstance;
                     mepModel = FI.MEPModel;
                     connectorSet = mepModel.ConnectorManager.Connectors;
+                    
                 }
                 if (element is Pipe)
                 {
@@ -83,7 +84,7 @@ namespace FindPipeWay
                             {
                                 foundedElement = nextconnector.Owner;
                                  foundedelementId = foundedElement.Id;
-                                 if ()
+                                 
                             }
                             
                             //TaskDialog.Show("Check", $"{element.Id}, {foundedElement.Id}");
@@ -116,7 +117,7 @@ namespace FindPipeWay
             bool isthreeway = false;
             if (element is FamilyInstance)
             {
-                if (element is MechanicalFitting)
+                if (element is FamilyInstance)
                 {
                     FamilyInstance fI = element as FamilyInstance;
                     MEPModel mepMoidel = fI.MEPModel;
@@ -126,7 +127,7 @@ namespace FindPipeWay
                     {
                         connectors.Add(connector);
                     }
-                    if (connectors.Count>2)
+                    if (connectors.Count>=3)
                     {
                         isthreeway = true;
                     }
@@ -142,7 +143,7 @@ namespace FindPipeWay
                     {
                         connectors.Add(connector);
                     }
-                    if (connectors.Count > 2)
+                    if (connectors.Count >=3)
                     {
                         isthreeway = true;
                     }
@@ -152,12 +153,12 @@ namespace FindPipeWay
             return isthreeway;
         }
 
-        public ElementId GetDirection (Document doc, ElementId elementId , bool isthreeway)
+       
+        public ElementId GetDirection (Document doc, ElementId elementId )
         {
             ElementId selectedpipe = null;
             List <ElementId> pipes = new List<ElementId>();
-            if (isthreeway == true)
-            {
+            
                 Element element = doc.GetElement(elementId);
                 if (element!=null)
                 {
@@ -170,23 +171,34 @@ namespace FindPipeWay
                         foreach (Connector nextconnector in nextconnectorset)
                         {
                             ElementId nextelementId = nextconnector.Owner.Id;
+                            pipes.Add(nextelementId);
                             
                         }
                     }
                 }
-            }
+            
+            double maxVolume = 0;
             foreach (ElementId pipe in pipes)
             {
-                double maxVolume = 0;
+                
                 Element el = doc.GetElement(pipe);
                 Pipe pipe1 = el as Pipe;
                 if (pipe1 != null)
                 {
-                    double volume = pipe1.LookupParameter("Pacход").AsDouble();
-                    if (volume > maxVolume)
+                   foreach ( Parameter parameter in pipe1.Parameters )
                     {
-                        selectedpipe = pipe1.Id;
+                        if (parameter.Definition.Name == "Расход")
+                        {
+                            double volume = parameter.AsDouble();
+                            if (volume > maxVolume)
+                            {
+                                maxVolume = volume;
+                                selectedpipe = pipe1.Id;
+                            }
+                        }
+
                     }
+                    
                 }
             }
             return selectedpipe;
@@ -245,30 +257,84 @@ namespace FindPipeWay
 
                     nextelement = foundedelements.Last();
                     foundedelements.Distinct();
-                    
-                    f = FindNextElement(doc, nextelement, foundedelements);
-                    if (f != null)
+                    if (IsThreeWay(doc, nextelement) == true)
                     {
-                        if (!foundedelements.Contains(f))
+
+                        var nf = GetDirection(doc, nextelement);
+                        if (nf != null)
                         {
-                            if (f != nextelement)
+                            if (!foundedelements.Contains(nf))
                             {
-                                foundedelements.Add(f);
+                                foundedelements.Add(nf);
+                                f = FindNextElement(doc, nf, foundedelements);
+                                if (f != null)
+                                {
+
+
+                                    if (!foundedelements.Contains(f))
+                                    {
+
+                                        if (f != nextelement)
+                                        {
+                                            foundedelements.Add(f);
+                                        }
+                                        else
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+
+
+                                }
+                                else
+                                {
+
+                                    continue;
+                                }
                             }
                             else
                             {
                                 continue;
                             }
+
+
                         }
-                        
-
-
                     }
                     else
                     {
 
-                        continue;
+                        f = FindNextElement(doc, nextelement, foundedelements);
+                        if (f != null)
+                        {
+
+
+                            if (!foundedelements.Contains(f))
+                            {
+
+                                if (f != nextelement)
+                                {
+                                    foundedelements.Add(f);
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+
+
+
+                        }
+                        else
+                        {
+
+                            continue;
+                        }
                     }
+
+                    
+                    
+                    
 
                 }
                 while (f != nextelement);
